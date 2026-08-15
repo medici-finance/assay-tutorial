@@ -1,0 +1,36 @@
+name: grade-selftest
+
+# Proof that the lesson graders can FAIL.
+#
+# The graders decide whether a learner finished a lesson, so "the grader is
+# green" is worth nothing on its own — a grader that passes everything is also
+# green. This job builds, for each lesson, an incomplete submission that must
+# grade checked-failed and a complete one that must grade checked-clean, then
+# mutates the complete tree once per graded arm and asserts that THAT ARM BY
+# NAME goes red.
+#
+# It is deliberately NOT named lesson-*.yml: it grades the graders, not a
+# learner, and a Verify row in the owning brief counts the lesson workflows.
+#
+# This job may go red. When it does, no learner's lesson state has changed —
+# what has changed is that the harness can no longer prove it measures anything,
+# which is the more urgent failure of the two.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    name: the graders can fail
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: bash scripts/grade/selftest.sh
+        run: |
+          bash scripts/grade/selftest.sh

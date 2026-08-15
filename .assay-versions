@@ -1,0 +1,13 @@
+# statusgen pin for assay-tutorial's own lint CI.
+# Format: <artifact> <tag> <sha256>  — see medici-finance/assay
+# docs/distribution.md "The .assay-versions pin file" for the full spec.
+#
+# NOT YET INSTALLABLE: the digests below are the real, live per-platform sha256
+# values for statusgen/v0.8.1 (verified against the checksums.txt published with
+# that release), but that release has not yet been mirrored to a public
+# statusgen release under the medici-finance/assay repo this tutorial is meant
+# to pin against. Re-derive this pin against whichever tag the first public
+# release actually ships as before relying on it.
+statusgen-darwin-arm64  statusgen/v0.8.1  6a7dd2a388b9f1c6b2e7f26f20877e5e76c22b7c55d063382ffa22e8f880552b
+statusgen-darwin-amd64  statusgen/v0.8.1  af3f6be6a3e95ad0048667912765907ea1cc603489d66204d0df584930988742
+statusgen-linux-amd64   statusgen/v0.8.1  b240b676e745d0b5c164d8f6edccbe1da04fb20766130f9ea320a989b2a4ca82

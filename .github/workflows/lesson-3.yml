@@ -1,0 +1,119 @@
+name: lesson-3
+
+# Grades lesson 3 (author and ship one brief) in YOUR copy of this template.
+#
+# WHAT IT GRADES: repo state — files, board output, PR shape. Never which agent,
+# model or editor produced the tree. That is what makes this tutorial
+# harness-neutral: the grader cannot tell, and does not ask.
+#
+# NO ORGANIZATION-LEVEL CREDENTIALS. Everything here runs on the default
+# `github.token` a template copy already has. These workflows reference no
+# organization- or repo-level credential at all, and a Verify row in the owning brief
+# asserts that there is none — a lesson a learner cannot run without a
+# credential they do not have is not a lesson.
+#
+# THREE STATES, THREE OUTCOMES. GitHub gives a job two conclusions, and this
+# lesson has three states, so the state is carried by WHICH JOB RUNS:
+#
+#   lesson-3-complete    green   you finished the lesson
+#   lesson-3-incomplete  red     the grader read your tree and something is missing
+#   (both skipped)         neither the grader COULD NOT evaluate part of your tree
+#
+# The third case is the one this shape exists for. Being told you failed because
+# the grader could not read your tree is worse than being told nothing, so a
+# could-not-check never turns anything red. The reasons are always in the
+# `grade` job's summary.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  grade:
+    name: grade lesson 3
+    runs-on: ubuntu-latest
+    outputs:
+      state: ${{ steps.grade.outputs.state }}
+      reasons: ${{ steps.grade.outputs.reasons }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # SOFT ON PURPOSE. If the pinned statusgen cannot be installed, the arms
+      # that need it must render could-not-check — the grade script owns that
+      # verdict, and it can only own it if the install does not take the job
+      # down first. No `sudo`: the binary goes in RUNNER_TEMP, which needs no
+      # elevation and works the same on a self-hosted runner where the user may
+      # be root and root may not be in sudoers.
+      - name: Install pinned statusgen (soft — a failed install is could-not-check, not a fail)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          mkdir -p "$RUNNER_TEMP/bin"
+          printf '%s\n' "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          if [ ! -f .assay-versions ]; then
+            echo "::notice::no .assay-versions pin file — statusgen-backed arms will render could-not-check"
+            exit 0
+          fi
+          plat="linux-amd64"
+          line="$(grep "^statusgen-$plat " .assay-versions)" || line=""
+          if [ -z "$line" ]; then
+            echo "::notice::no statusgen pin for $plat — statusgen-backed arms will render could-not-check"
+            exit 0
+          fi
+          tag="$(printf '%s' "$line" | awk '{print $2}')"
+          want="$(printf '%s' "$line" | awk '{print $3}')"
+          gh release download "$tag" --repo medici-finance/assay \
+             --pattern "statusgen-$plat" -O "$RUNNER_TEMP/statusgen" || {
+            echo "::notice::could not download $tag — statusgen-backed arms will render could-not-check"
+            exit 0
+          }
+          echo "${want}  ${RUNNER_TEMP}/statusgen" | sha256sum -c - || {
+            echo "::error::statusgen digest does not match the pin — refusing to install it"
+            rm -f "$RUNNER_TEMP/statusgen"
+            exit 0
+          }
+          install -m 0755 "$RUNNER_TEMP/statusgen" "$RUNNER_TEMP/bin/statusgen"
+
+      - name: Grade
+        id: grade
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # The step body is scripts/grade/ci-step.sh, not inline shell: shell
+        # embedded in YAML cannot be exercised by scripts/grade/selftest.sh,
+        # and the three-state translation is the last place this harness can
+        # afford an unproven link.
+        run: |
+          bash scripts/grade/ci-step.sh 3
+
+  complete:
+    name: lesson-3-complete
+    needs: grade
+    if: needs.grade.outputs.state == 'checked-clean'
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          LESSON: "3 — author and ship one brief"
+        run: |
+          printf 'Lesson %s complete.\n' "$LESSON"
+
+  incomplete:
+    name: lesson-3-incomplete
+    needs: grade
+    if: needs.grade.outputs.state == 'checked-failed'
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          REASONS: ${{ needs.grade.outputs.reasons }}
+          LESSON: "3 — author and ship one brief"
+        run: |
+          printf 'Lesson %s is not complete yet. Each line names one thing to fix:\n\n' "$LESSON"
+          printf '%s\n' "$REASONS"
+          exit 1

@@ -1,0 +1,42 @@
+name: statusgen-lint
+
+# Minimal CI for assay-tutorial: install the PINNED statusgen release binary
+# (channel E — sha256-verified, per medici-finance/assay
+# docs/adopting-assay.md § install-statusgen) and run `statusgen --lint` only.
+#
+# Deliberately the lint half ONLY — no push-to-main "regenerate and commit
+# STATUS.md" half. A freshly-templated learner repo has no docs/streams/ (and so
+# nothing to regenerate) until the lesson content is added; adding the
+# regenerate half is a follow-up once this repo carries its own streams, not a
+# bootstrap concern. See docs/adopting-assay.md § add-statusgen-ci in
+# medici-finance/assay for the full two-half shape if/when this repo wants one.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pinned statusgen (channel E — sha256-verified release binary)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          plat="$(uname -s | tr A-Z a-z)-$(uname -m | sed 's/^x86_64$/amd64/; s/^aarch64$/arm64/')"
+          line="$(grep "^statusgen-$plat " .assay-versions || true)"
+          if [ -z "$line" ]; then
+            echo "::error::no .assay-versions pin for platform $plat — refusing rather than guessing"
+            exit 1
+          fi
+          tag="$(printf '%s' "$line" | awk '{print $2}')"
+          sha="$(printf '%s' "$line" | awk '{print $3}')"
+          gh release download "$tag" --repo medici-finance/assay --pattern "statusgen-$plat" -O /tmp/statusgen
+          echo "${sha}  /tmp/statusgen" | shasum -a 256 -c -
+          sudo install -m 0755 /tmp/statusgen /usr/local/bin/statusgen
+
+      - name: statusgen --lint
+        run: statusgen --lint
