@@ -2,12 +2,10 @@
 # Format: <artifact> <tag> <sha256>  — see medici-finance/assay
 # docs/distribution.md "The .assay-versions pin file" for the full spec.
 #
-# NOT YET INSTALLABLE: the digests below are the real, live per-platform sha256
-# values for statusgen/v0.8.1 (verified against the checksums.txt published with
-# that release), but that release has not yet been mirrored to a public
-# statusgen release under the medici-finance/assay repo this tutorial is meant
-# to pin against. Re-derive this pin against whichever tag the first public
-# release actually ships as before relying on it.
-statusgen-darwin-arm64  statusgen/v0.8.1  6a7dd2a388b9f1c6b2e7f26f20877e5e76c22b7c55d063382ffa22e8f880552b
-statusgen-darwin-amd64  statusgen/v0.8.1  af3f6be6a3e95ad0048667912765907ea1cc603489d66204d0df584930988742
-statusgen-linux-amd64   statusgen/v0.8.1  b240b676e745d0b5c164d8f6edccbe1da04fb20766130f9ea320a989b2a4ca82
+# Pinned against the public statusgen release medici-finance/assay v0.13.0.
+# Public statusgen now ships under BARE vX.Y.Z tags (not the old statusgen/vX
+# scheme); the digests below are the real per-platform sha256 values verified
+# against the checksums.txt published with the v0.13.0 release.
+statusgen-darwin-arm64  v0.13.0  272aedd04f9777eb1b7c7970182b9cdbce64ee0ea771678a6f425f3698c13160
+statusgen-darwin-amd64  v0.13.0  785ae37bb02e775e9dcd9c1a78f4c1ac899729c4ceba23bc8634cc18a30afa8c
+statusgen-linux-amd64   v0.13.0  be3a6f1412724adad104c606079901dfcaa477b3dc3a5a4eb5fc740670ecbef3

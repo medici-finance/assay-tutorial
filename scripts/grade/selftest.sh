@@ -376,8 +376,28 @@ expect_verdict "lesson3 no baseline" could-not-check
 expect_arm     "lesson3 no baseline" could-not-check 3.2
 
 # could-not-check: no gh
+#
+# A PATH of "/usr/bin:/bin" is NOT genuinely gh-free on a CI runner: GitHub
+# Actions ships gh at /usr/bin/gh, so the grader's `command -v gh` finds it and
+# grades 3.6t checked-clean — the arm this fixture exists to prove renders
+# could-not-check. We cannot simply drop /usr/bin (coreutils live there) and
+# cannot shadow gh by prepending a non-exec stub (`command -v` skips it and
+# keeps searching to the real gh). So build a scratch bin dir holding symlinks
+# to ONLY the tools 3.sh/lib.sh actually invoke, with gh (and statusgen)
+# deliberately OMITTED, and point PATH at that dir ALONE.
+NOGH_BIN="$WORK/nogh-bin"
+mkdir -p "$NOGH_BIN" || die "cannot create the no-gh bin dir"
+for t in bash find sort grep head dirname basename git tr; do
+  p="$(command -v "$t" 2>/dev/null)" || die "no-gh fixture needs '$t' but it is not on PATH"
+  ln -sf "$p" "$NOGH_BIN/$t"
+done
+# The canary: gh and statusgen are intentionally absent, and if a future edit
+# ever links either in here the fixture would silently stop testing the tool-
+# absent arms. Fail loudly instead.
+[ -e "$NOGH_BIN/gh" ]        && die "no-gh fixture unexpectedly contains gh"
+[ -e "$NOGH_BIN/statusgen" ] && die "no-gh fixture unexpectedly contains statusgen"
 D="$(mk_l3_complete l3-nogh)"
-OUT="$(cd "$D" && PATH="$STUBS/nonexistent:/usr/bin:/bin" bash scripts/grade/3.sh 2>&1)"; RC=$?
+OUT="$(cd "$D" && PATH="$NOGH_BIN" bash scripts/grade/3.sh 2>&1)"; RC=$?
 expect_rc      "lesson3 no gh/statusgen" 2
 expect_verdict "lesson3 no gh/statusgen" could-not-check
 expect_arm     "lesson3 no gh/statusgen" could-not-check 3.6t
