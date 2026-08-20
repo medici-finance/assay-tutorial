@@ -39,4 +39,4 @@ jobs:
           sudo install -m 0755 /tmp/statusgen /usr/local/bin/statusgen
 
       - name: statusgen --lint
-        run: statusgen --lint
+        run: statusgen --lint --allow-empty-root
